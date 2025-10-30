@@ -49,7 +49,7 @@ jobs:
           git config commit.gpgsign true
           git config user.signingkey "$KEY_ID"
           git config user.name "My Commit Signing App"
-          git config user.email "${{ vars.APP_ID }}+username@users.noreply.github.com"
+          git config user.email "github-app-${{ vars.APP_ID }}@users.noreply.github.com"
           # Allow loopback pinentry (needed if passphrase provided)
           echo 'pinentry-mode loopback' >> ~/.gnupg/gpg.conf
           if [ -n "$GPG_PASSPHRASE" ]; then
