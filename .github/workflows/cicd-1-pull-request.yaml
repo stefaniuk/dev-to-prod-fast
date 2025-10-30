@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - "**"
+    paths-ignore:
+      - "date"
   pull_request:
     types: [opened, reopened]
 
@@ -29,6 +31,32 @@ jobs:
           token: ${{ steps.app-token.outputs.token }}
           ref: ${{ github.head_ref }}
           persist-credentials: false
+      - name: "Import GPG key (optional)"
+        if: ${{ secrets.GPG_PRIVATE_KEY != '' }}
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.APP_GPG_PRIVATE_KEY }}
+          GPG_PASSPHRASE: ${{ secrets.APP_GPG_PASSPHRASE }}
+        run: |
+          mkdir -p ~/.gnupg
+          chmod 700 ~/.gnupg
+          # Import key
+          echo "$GPG_PRIVATE_KEY" | gpg --batch --import
+          # Extract first secret key ID
+          KEY_ID=$(gpg --batch --list-secret-keys --with-colons | awk -F: '/^sec:/ {print $5; exit}')
+          if [ -z "$KEY_ID" ]; then
+            echo "Failed to import GPG key" >&2; exit 1; fi
+          # Configure git to sign commits
+          git config gpg.program gpg
+          git config commit.gpgsign true
+          git config user.signingkey "$KEY_ID"
+          git config user.name "My Commit Signing App"
+          git config user.email "github-app-${{ vars.APP_ID }}@users.noreply.github.com"
+          # Allow loopback pinentry (needed if passphrase provided)
+          echo 'pinentry-mode loopback' >> ~/.gnupg/gpg.conf
+          if [ -n "$GPG_PASSPHRASE" ]; then
+            echo 'allow-loopback-pinentry' >> ~/.gnupg/gpg-agent.conf
+          fi
+          echo "Imported GPG key $KEY_ID for commit signing"
       - name: "Write date file"
         run: |
           datetime=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
@@ -38,8 +66,6 @@ jobs:
         env:
           APP_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
-          git config user.name "github-app[${{ vars.APP_ID }}]"
-          git config user.email "github-app-${{ vars.APP_ID }}@users.noreply.github.com"
           git add date
           git commit -m "chore: update date file"
           target_branch="${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}"
