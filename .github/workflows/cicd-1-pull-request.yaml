@@ -32,7 +32,6 @@ jobs:
           ref: ${{ github.head_ref }}
           persist-credentials: false
       - name: "Import GPG key (optional)"
-        if: ${{ secrets.GPG_PRIVATE_KEY != '' }}
         env:
           GPG_PRIVATE_KEY: ${{ secrets.APP_GPG_PRIVATE_KEY }}
           GPG_PASSPHRASE: ${{ secrets.APP_GPG_PASSPHRASE }}
