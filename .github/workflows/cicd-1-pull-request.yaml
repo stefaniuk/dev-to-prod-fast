@@ -1,19 +1,17 @@
-name: "CI/CD pull request"
+name: "CI/CD release"
 
 on:
   push:
     branches:
-      - "**"
-    paths-ignore:
-      - "date"
-  pull_request:
-    types: [opened, reopened]
+      - "main"
 
 permissions:
-  contents: read
+  contents: write
+  issues: write
+  pull-requests: write
 
 jobs:
-  auto:
+  release:
     runs-on: ubuntu-latest
     steps:
       - name: "Generate GitHub App token"
@@ -22,15 +20,17 @@ jobs:
         with:
           app-id: ${{ vars.GH_APP_ID }}
           private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+
       - name: "Mask GitHub App token"
         run: echo "::add-mask::${{ steps.app-token.outputs.token }}"
+
       - name: "Checkout repository"
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
           token: ${{ steps.app-token.outputs.token }}
-          ref: ${{ github.head_ref }}
           persist-credentials: false
+
       - name: "Import commit signing key"
         env:
           BOT_NAME: ${{ vars.GIT_SIGN_BOT_NAME }}
@@ -56,19 +56,13 @@ jobs:
             gpgconf --launch gpg-agent || true
             echo "warmup" | gpg --batch --yes --passphrase "$BOT_GPG_PASS" --pinentry-mode loopback --sign >/dev/null 2>&1 || true
           fi
-      - name: "Write date file"
-        run: |
-          datetime=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
-          echo "$datetime" > date
-          cat date
-      - name: "Commit and push date file"
+
+      - name: "Run Semantic Release"
+        uses: cycjimmy/semantic-release-action@v4
+        with:
+          extra_plugins: |
+            @semantic-release/changelog
+            @semantic-release/git
+            @semantic-release/github
         env:
-          APP_TOKEN: ${{ steps.app-token.outputs.token }}
-          BOT_GPG_PASS: ${{ secrets.GIT_SIGN_BOT_GPG_PASSPHRASE }}
-        run: |
-          git add date
-          git commit -S -m "chore: update date file"
-          target_branch="${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}"
-          git push \
-            "https://x-access-token:${APP_TOKEN}@github.com/${{ github.repository }}.git" \
-            "HEAD:${target_branch}"
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
