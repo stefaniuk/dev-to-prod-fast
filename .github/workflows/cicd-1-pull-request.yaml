@@ -20,8 +20,8 @@ jobs:
         uses: actions/create-github-app-token@v2
         id: app-token
         with:
-          app-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          app-id: ${{ vars.GH_APP_ID }}
+          private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
       - name: "Mask GitHub App token"
         run: echo "::add-mask::${{ steps.app-token.outputs.token }}"
       - name: "Checkout repository"
@@ -31,31 +31,31 @@ jobs:
           token: ${{ steps.app-token.outputs.token }}
           ref: ${{ github.head_ref }}
           persist-credentials: false
-      - name: "Import GPG key (optional)"
+      - name: "Import commit signing key"
         env:
-          GPG_PRIVATE_KEY: ${{ secrets.APP_GPG_PRIVATE_KEY }}
-          GPG_PASSPHRASE: ${{ secrets.APP_GPG_PASSPHRASE }}
+          BOT_NAME: ${{ vars.GIT_SIGN_BOT_NAME }}
+          BOT_EMAIL: ${{ vars.GIT_SIGN_BOT_EMAIL }}
+          BOT_GPG_PKEY: ${{ secrets.GIT_SIGN_BOT_GPG_PRIVATE_KEY }}
+          BOT_GPG_PASS: ${{ secrets.GIT_SIGN_BOT_GPG_PASSPHRASE }}
         run: |
           mkdir -p ~/.gnupg
           chmod 700 ~/.gnupg
-          # Import key
-          echo "$GPG_PRIVATE_KEY" | gpg --batch --import
-          # Extract first secret key ID
-          KEY_ID=$(gpg --batch --list-secret-keys --with-colons | awk -F: '/^sec:/ {print $5; exit}')
-          if [ -z "$KEY_ID" ]; then
-            echo "Failed to import GPG key" >&2; exit 1; fi
-          # Configure git to sign commits
-          git config gpg.program gpg
-          git config commit.gpgsign true
-          git config user.signingkey "$KEY_ID"
-          git config user.name "My Commit Signing App"
-          git config user.email "github-app-${{ vars.APP_ID }}@users.noreply.github.com"
-          # Allow loopback pinentry (needed if passphrase provided)
-          echo 'pinentry-mode loopback' >> ~/.gnupg/gpg.conf
-          if [ -n "$GPG_PASSPHRASE" ]; then
-            echo 'allow-loopback-pinentry' >> ~/.gnupg/gpg-agent.conf
+          echo "pinentry-mode loopback" >> ~/.gnupg/gpg.conf
+          echo "allow-loopback-pinentry" >> ~/.gnupg/gpg-agent.conf
+          export GPG_TTY=$(tty)
+          echo "$BOT_GPG_PKEY" | gpg --batch --import
+          key_id=$(gpg --batch --list-secret-keys --with-colons | awk -F: '/^sec:/ {print $5; exit}')
+          git config --global user.name "$BOT_NAME"
+          git config --global user.email "$BOT_EMAIL"
+          git config --global user.signingkey "$key_id"
+          git config --global gpg.program gpg
+          git config --global commit.gpgsign true
+          git config --global tag.gpgSign true
+          if [ -n "$BOT_GPG_PASS" ]; then
+            gpgconf --kill gpg-agent || true
+            gpgconf --launch gpg-agent || true
+            echo "warmup" | gpg --batch --yes --passphrase "$BOT_GPG_PASS" --pinentry-mode loopback --sign >/dev/null 2>&1 || true
           fi
-          echo "Imported GPG key $KEY_ID for commit signing"
       - name: "Write date file"
         run: |
           datetime=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
@@ -64,9 +64,11 @@ jobs:
       - name: "Commit and push date file"
         env:
           APP_TOKEN: ${{ steps.app-token.outputs.token }}
+          BOT_GPG_PASS: ${{ secrets.GIT_SIGN_BOT_GPG_PASSPHRASE }}
         run: |
           git add date
-          git commit -m "chore: update date file"
+          git commit -S -m "chore: update date file"
           target_branch="${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}"
-          echo "Pushing to $target_branch"
-          git push "https://x-access-token:${APP_TOKEN}@github.com/${{ github.repository }}.git" "HEAD:${target_branch}"
+          git push \
+            "https://x-access-token:${APP_TOKEN}@github.com/${{ github.repository }}.git" \
+            "HEAD:${target_branch}"
