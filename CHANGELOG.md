@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.1](https://github.com/stefaniuk/dev-to-prod-fast/compare/v1.1.0...v1.1.1) (2025-10-31)
+
+
+### Bug Fixes
+
+* **docs:** clarify release security model in README ([99b2b58](https://github.com/stefaniuk/dev-to-prod-fast/commit/99b2b58cc93c303118d9ab3c51b80273659a41f4))
+
+## [1.1.1](https://github.com/stefaniuk/dev-to-prod-fast/compare/v1.1.0...v1.1.1) (2025-10-31)
+
+
+### Bug Fixes
+
+* **docs:** clarify release security model in README ([99b2b58](https://github.com/stefaniuk/dev-to-prod-fast/commit/99b2b58cc93c303118d9ab3c51b80273659a41f4))
+
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
 ## [1.1.0](https://github.com/stefaniuk/dev-to-prod-fast/compare/v1.0.0...v1.1.0) - 2025-10-31
 
 ### Added (Initial Release)
