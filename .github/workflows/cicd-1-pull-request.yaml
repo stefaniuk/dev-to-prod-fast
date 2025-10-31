@@ -63,5 +63,6 @@ jobs:
             @semantic-release/changelog
             @semantic-release/git
             @semantic-release/github
+            @semantic-release/exec
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
