@@ -7,10 +7,10 @@ Concise documentation for the automated release pipeline using Semantic Release,
 On every push to `main` the workflow (`.github/workflows/cicd-1-pull-request.yaml`) runs Semantic Release to:
 
 1. Analyze commits (Conventional Commits) to decide the next version.
-2. Update `CHANGELOG.md` and write the new version into `VERSION`.
-3. Commit those files with a release message.
-4. Create and then re-sign the tag (if enabled) with the imported GPG key.
-5. Publish a GitHub Release.
+2. Write the new version into `VERSION`.
+3. Commit the version file with a release message.
+4. Create and (optionally) sign the tag with the imported GPG key.
+5. Publish a GitHub Release (canonical release notes; no local changelog file maintained).
 
 ## Why a GitHub App Token (Not PAT)
 
@@ -33,12 +33,11 @@ Use a bot-specific email (or GitHub noreply) that matches the key UID and the co
 
 ## Files
 
-| File           | Purpose                                                               |
-| -------------- | --------------------------------------------------------------------- |
-| `.releaserc`   | Plugin configuration (analyzer, notes, changelog, exec, git, github). |
-| `CHANGELOG.md` | Generated release notes (Keep a Changelog style).                     |
-| `VERSION`      | Plain text current version written during prepare phase.              |
-| Workflow YAML  | Implements release steps and key import.                              |
+| File          | Purpose                                                    |
+| ------------- | ---------------------------------------------------------- |
+| `.releaserc`  | Plugin configuration (analyzer, notes, exec, git, github). |
+| `VERSION`     | Plain text current version written during prepare phase.   |
+| Workflow YAML | Implements release steps and key import.                   |
 
 ## Plugins & Flow
 
@@ -46,10 +45,9 @@ Order in `.releaserc`:
 
 1. `@semantic-release/commit-analyzer`
 2. `@semantic-release/release-notes-generator`
-3. Two `@semantic-release/changelog` entries (title + standard) – can be consolidated.
-4. `@semantic-release/exec` writes `${nextRelease.version}` to `VERSION`.
-5. `@semantic-release/git` commits `VERSION` + `CHANGELOG.md`.
-6. `@semantic-release/github` publishes release.
+3. `@semantic-release/exec` writes `${nextRelease.version}` to `VERSION`.
+4. `@semantic-release/git` commits `VERSION`.
+5. `@semantic-release/github` publishes the GitHub Release (with notes only stored there).
 
 ## Conventional Commits Impact
 
@@ -81,6 +79,21 @@ Secrets:
 - `GIT_SIGN_BOT_GPG_PRIVATE_KEY` – ASCII-armored GPG private key.
 - `GIT_SIGN_BOT_GPG_PASSPHRASE` – (optional) passphrase; empty if key unprotected.
 
+## Release Notes Strategy (No Local CHANGELOG.md)
+
+We intentionally do NOT commit a `CHANGELOG.md` file. The GitHub Release notes are the single source of truth. This reduces churn and avoids merge conflicts common with a monolithic changelog file. Key rationale:
+
+| Reason                 | Benefit                                                                            |
+| ---------------------- | ---------------------------------------------------------------------------------- |
+| Single source of truth | Prevents divergence between release page and repo file.                            |
+| Smaller diffs          | Release commits touch only `VERSION` (clean history).                              |
+| Conflict avoidance     | No manual merges of changelog edits across branches.                               |
+| Performance            | Skips filesystem rewrite of a large markdown file each release.                    |
+| API-friendly           | Consumers fetch structured notes via GitHub API without parsing markdown sections. |
+| Auditable provenance   | Signed tag + release body form an immutable audit trail.                           |
+
+If a materialized file is later required (e.g., packaging, offline docs), re-enable `@semantic-release/changelog` or generate an on-demand export pipeline.
+
 ## Adding a Feature
 
 1. Create a branch and commit using `feat(scope): description`.
@@ -98,9 +111,9 @@ Secrets:
 
 ## Future Improvements
 
-- Consolidate duplicate changelog plugin entry (keep only configured one).
 - Add commit lint action to enforce Conventional Commits pre-merge.
 - Optionally publish artifacts (npm, container) using additional plugins.
+- Add build metadata file (version + SHA + timestamp) if traceability needs increase.
 
 ---
 
