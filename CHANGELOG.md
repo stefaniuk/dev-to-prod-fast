@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/stefaniuk/dev-to-prod-fast/compare/v1.0.0...v1.1.0) (2025-10-31)
+
+
+### Features
+
+* **release:** update pipeline to persist VERSION file ([c03c010](https://github.com/stefaniuk/dev-to-prod-fast/commit/c03c010302ed45a1c7b176791577371bbbd54ddd))
+
 # 1.0.0 (2025-10-31)
 
 
