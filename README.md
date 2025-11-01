@@ -1,8 +1,8 @@
-# Dev to Prod Fast
+# Dev to Prod Fast Release
 
 This repository demonstrates a fully automated release workflow that moves code from development to production safely and transparently, using [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/), [Semantic Versioning](https://semver.org/), and signed releases. The goal is to show how teams can automate versioning, tagging, and release publication, all without manual intervention or risk of inconsistency.
 
-- [Dev to Prod Fast](#dev-to-prod-fast)
+- [Dev to Prod Fast Release](#dev-to-prod-fast-release)
   - [Overview](#overview)
   - [Structure](#structure)
     - [Repository files](#repository-files)
@@ -10,6 +10,9 @@ This repository demonstrates a fully automated release workflow that moves code 
     - [Configuration](#configuration)
       - [Variables](#variables)
       - [Secrets](#secrets)
+  - [Prerequisites](#prerequisites)
+    - [GitHub App setup](#github-app-setup)
+    - [User bot setup](#user-bot-setup)
   - [Design decisions and rationale](#design-decisions-and-rationale)
     - [🧩 Why use a GitHub App Token instead of a Personal Access Token (PAT)](#-why-use-a-github-app-token-instead-of-a-personal-access-token-pat)
     - [🔐 Why the signing key belongs to a bot, not the App](#-why-the-signing-key-belongs-to-a-bot-not-the-app)
@@ -18,7 +21,6 @@ This repository demonstrates a fully automated release workflow that moves code 
   - [How to use this repository](#how-to-use-this-repository)
     - [Adding a new feature](#adding-a-new-feature)
     - [How Conventional Commits affect versioning](#how-conventional-commits-affect-versioning)
-  - [Future improvements](#future-improvements)
 
 ## Overview
 
@@ -69,19 +71,76 @@ The process ensures that version bumps, tags, and release notes are always consi
 
 #### Variables
 
-These are configured as repository variables:
+Repository variables define the static configuration needed by the workflow:
 
-- `GH_APP_ID` - the GitHub App's numeric ID
-- `GIT_SIGN_BOT_NAME` - display name for the bot account used for signing commits
-- `GIT_SIGN_BOT_EMAIL` - email linked to the GPG key uploaded to GitHub
+- `GH_APP_ID` - numeric ID of the GitHub App
+- `GIT_SIGN_BOT_NAME` - the display name used for the bot's signed commits
+- `GIT_SIGN_BOT_EMAIL` - the bot's email address (must match the uploaded GPG key)
 
 #### Secrets
 
-These are stored as repository secrets:
+Repository secrets provide the credentials and cryptographic materials required to sign releases:
 
-- `GH_APP_PRIVATE_KEY` - the App's private PEM key for authentication
-- `GIT_SIGN_BOT_GPG_PRIVATE_KEY` - ASCII-armoured GPG private key for the signing bot
-- `GIT_SIGN_BOT_GPG_PASSPHRASE` - optional passphrase, can be blank if the key is unprotected
+- `GH_APP_PRIVATE_KEY` - the GitHub App's private PEM key (used for authentication)
+- `GIT_SIGN_BOT_GPG_PRIVATE_KEY` - the ASCII-armoured private GPG key of the signing bot
+- `GIT_SIGN_BOT_GPG_PASSPHRASE` - the GPG key passphrase
+
+## Prerequisites
+
+### GitHub App setup
+
+Follow these steps to create and configure a minimal‑permission GitHub App that will authenticate the release workflow. This should be done for you by the NHS GitHub Admins. You should have to do this ourself testing.
+
+1. Create the App
+
+   - Go to [GitHub App settings](https://github.com/settings/apps) user _Settings → Developer Settings → GitHub Apps → New GitHub App_
+   - Name it something like _"My Dev to Prod Fast Release App"_ (must be globally unique)
+   - Set the homepage URL to your repository
+   - Configure permissions
+     - Repository permissions:
+       - _Contents: Read & write_ (needed to create tags and commit `VERSION`)
+       - _Issues: Read & write_ (enables adding release notes comments)
+       - _Pull requests: Read & write_ (allows future PR commenting automation)
+       - All other repository permissions: No access
+     - _Organization permissions: None required_
+     - _Account permissions: None required_
+   - For the installation scope choose _Only on this account_ (or organisation-wide if required)
+
+2. Generate the private key
+
+   - After saving, click _Generate a private key_
+   - Copy the full `.pem` file contents (including BEGIN/END lines)
+   - Store it securely, you'll need it to populate `GH_APP_PRIVATE_KEY`
+
+3. Install the App
+
+   - Click _Install App_ on the App page
+   - Choose your user account
+   - Select _Only select repositories_ → pick this repository (recommended) or _All repositories_ (broader scope-only if necessary)
+
+4. Add repository variables & secrets
+
+   - Go to your repository → Settings → Secrets and variables → Actions
+   - Add the variables and secrets listed above
+
+5. Test
+
+   - Make a trivial commit e.g. `docs: test app token wiring` to `main`
+   - In workflow logs confirm the _"Generate GitHub App token"_ step succeeds
+
+   After setup, this step in your workflow will issue short-lived authentication tokens automatically:
+
+   ```yaml
+   - name: Generate GitHub App token
+   uses: actions/create-github-app-token@v2
+   with:
+       app-id: ${{ vars.GH_APP_ID }}
+       private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+   ```
+
+### User bot setup
+
+TODO: [Create GPG key](https://github.com/nhs-england-tools/repository-template/blob/main/docs/user-guides/Sign_Git_commits.md)
 
 ## Design decisions and rationale
 
@@ -146,7 +205,7 @@ If an on-disk changelog is ever needed (e.g. for packaged distributions), re-ena
    feat(api): add user authentication
    ```
 
-2. Open a Pull Request and merge it into `main`
+2. Open a Pull Request and merge it into `main`, ensure that the commit created as an effect of merging this PR contains the above message as this drives the sematic versioning
 3. The workflow will:
 
    - Detect that the change type is `feat` → trigger a **minor** version bump
@@ -158,20 +217,14 @@ You'll see the new tag and release appear on GitHub, both signed and verified (c
 
 ### How Conventional Commits affect versioning
 
-| Type                          | Example                           | Release bump |
-| ----------------------------- | --------------------------------- | ------------ |
-| `docs`                        | `docs(readme): update section`    | no bump      |
-| `chore`                       | `chore(release): housekeeping`    | no bump      |
-| `fix`                         | `fix(ci): correct signing config` | patch        |
-| `perf`                        | `perf(core): improve runtime`     | patch        |
-| `refactor`                    | `refactor(ci): simplify logic`    | patch        |
-| `feat`                        | `feat(ci): add exec plugin`       | minor        |
-| `feat!:` or `BREAKING CHANGE` | `feat!: remove deprecated option` | major        |
-
-## Future improvements
-
-- **Add commit linting**: enforce Conventional Commit style at PR level
-- **Enhance traceability**: generate a metadata file including version, commit SHA, and timestamp
-- **GitHub PR configuration**: provide compatible GitHub settings for PR merging
-- **Extend to multi-repo setups**: explore one signing key and App per organisation for consistent release provenance
-- **Publish build artefacts**: e.g., npm packages or Docker images using extra semantic-release plugins
+| Type              | Example                                  | Release bump | Explanation                                                                                                 |
+| ----------------- | ---------------------------------------- | ------------ | ----------------------------------------------------------------------------------------------------------- |
+| `docs`            | `docs(readme): update section`           | no bump      | Documentation-only change, does not affect the application's behaviour or API                               |
+| `style`           | `style(css): normalise headings`         | no bump      | Code style or formatting change (e.g. whitespace, lint fixes) - no functional impact                        |
+| `chore`           | `chore(release): housekeeping`           | no bump      | Maintenance or tooling updates unrelated to user-facing code                                                |
+| `test`            | `test(ci): add smoke tests`              | no bump      | Adds or modifies tests, does not change runtime or API behaviour                                            |
+| `refactor`        | `refactor(ci): simplify logic`           | patch        | Code improvement or cleanup without changing behaviour, treated like a small fix                            |
+| `fix`             | `fix(ci): correct signing config`        | patch        | Corrects an existing issue, triggers a patch version bump (`x.y.z → x.y.(z+1)`)                             |
+| `perf`            | `perf(core): improve runtime`            | patch        | Performance enhancement without altering external behaviour, treated as a patch                             |
+| `feat`            | `feat(ci): add exec plugin`              | minor        | Introduces a new, backward-compatible feature, triggers a minor version bump (`x.y.z → x.(y+1).0`)          |
+| `<type>[scope]!:` | `feat(api)!: remove deprecated endpoint` | major        | Introduces a breaking change (non-backward-compatible), triggers a major version bump (`x.y.z → (x+1).0.0`) |
