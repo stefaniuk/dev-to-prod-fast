@@ -141,6 +141,37 @@ Follow these steps to create and configure a minimal‑permission GitHub App tha
 
 TODO: [Create GPG key](https://github.com/nhs-england-tools/repository-template/blob/main/docs/user-guides/Sign_Git_commits.md)
 
+```bash
+USER_NAME="Dan Stefaniuk" # must match
+USER_EMAIL="daniel.stefaniuk@gmail.com" # must match
+file=$USER_EMAIL
+mkdir -p "$HOME/.gnupg"
+chmod 0700 "$HOME/.gnupg"
+cd "$HOME/.gnupg"
+cat > "$file.gpg-key.script" <<EOF
+  %echo Generating a GPG key
+  Key-Type: ECDSA
+  Key-Curve: nistp256
+  Subkey-Type: ECDH
+  Subkey-Curve: nistp256
+  Name-Real: $USER_NAME
+  Name-Email: $USER_EMAIL
+  Expire-Date: 0
+  Passphrase: ???
+  %commit
+  %echo done
+EOF
+gpg --batch --generate-key "$file.gpg-key.script"
+rm "$file.gpg-key.script"
+# or do it manually by running `gpg --full-gen-key`
+cd -
+gpg --list-secret-keys --keyid-format LONG $USER_EMAIL
+ID=???
+gpg --armor --export $ID > $file.gpg-key.pub
+gpg --armor --export-secret-keys $ID > $file.gpg-key
+gpg --list-secret-keys --keyid-format LONG
+```
+
 ## Design decisions and rationale
 
 This section captures the thinking behind some key design choices.
@@ -223,11 +254,13 @@ Other semver-valid formats such as `1.2.3+api` or `api_v1.2.3` were evaluated, b
 - The GitHub App used for releases does not require Packages accessas that capability comes from the ephemeral ${{ github.token }} used inside the workflow
 - However, the workflow itself must request the correct token scopes which must include `packages: write`
 - Use `${{ github.token }}` instead of the legacy `${{ secrets.GITHUB_TOKEN }}`, the former is guaranteed to exist in all workflow contexts and is the modern standard
-- In _repository → Settings → Actions → General_, ensure the following are configured: (TODO: check it!)
-  - _Read and write permissions_ under _Workflow permissions_
+- In _repository → Settings → Actions → General_, ensure the following are configured:
+  - _Read repository contents and packages permissions_ under _Workflow permissions_
   - _Allow GitHub Actions to create and approve pull requests_ is optional
 
 This _"flat registry with tagged components"_ model scales cleanly across repositories while remaining compliant with GitHub's authentication and namespace rules. It also provides a consistent, human-readable way to publish and manage multiple container images under one project.
+
+TODO: Explore manually created registry packages connected to the repository
 
 ## How to use this repository
 
