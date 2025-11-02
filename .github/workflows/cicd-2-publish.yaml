@@ -61,6 +61,9 @@ jobs:
             echo "warmup" | gpg --batch --yes --passphrase "$BOT_GPG_PASS" --pinentry-mode loopback --sign >/dev/null 2>&1 || true
           fi
           gpg --list-secret-keys --keyid-format LONG
+          git config --get user.name
+          git config --get user.email
+          gpg --fingerprint "$key_id"
 
       - name: "Run release process"
         id: release
@@ -98,6 +101,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.release.outputs.new_release_version }}
         run: |
+          git log -1 --show-signature
           gh release edit "v${VERSION}" \
             --repo ${{ github.repository }} \
             --notes "🐳 container image published: ghcr.io/${{ github.repository }}/${VERSION}"
