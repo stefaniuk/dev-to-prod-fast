@@ -98,9 +98,10 @@ Follow these steps to create and configure a minimal‑permission GitHub App tha
    - Set the homepage URL to your repository
    - Configure permissions
      - Repository permissions:
-       - _Contents: Read & write_ (needed to create tags and commit `VERSION`)
-       - _Issues: Read & write_ (enables adding release notes comments)
-       - _Pull requests: Read & write_ (allows future PR commenting automation)
+       - _Contents: Read & write_, needed to create tags and commit `VERSION`
+       - _Issues: Read & write_, enables adding release notes comments
+       - _Packages: Read & write_, allows publishing container images to the registry
+       - _Pull requests: Read & write_, allows future PR commenting automation
        - All other repository permissions: No access
      - _Organization permissions: None required_
      - _Account permissions: None required_
