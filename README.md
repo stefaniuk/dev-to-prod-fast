@@ -99,6 +99,7 @@ Follow these steps to create and configure a minimal‑permission GitHub App tha
      - Repository permissions:
        - _Contents: Read & write_, needed to create tags and commit `VERSION`
        - _Issues: Read & write_, enables adding release notes comments
+       - _Pull Requests: Read & write_, allows future Pull Request automation and is optional
        - All other repository permissions: No access
      - _Organization permissions: None required_
      - _Account permissions: None required_
@@ -222,6 +223,9 @@ Other semver-valid formats such as `1.2.3+api` or `api_v1.2.3` were evaluated, b
 - The GitHub App used for releases does not require Packages accessas that capability comes from the ephemeral ${{ github.token }} used inside the workflow
 - However, the workflow itself must request the correct token scopes which must include `packages: write`
 - Use `${{ github.token }}` instead of the legacy `${{ secrets.GITHUB_TOKEN }}`, the former is guaranteed to exist in all workflow contexts and is the modern standard
+- In _repository → Settings → Actions → General_, ensure the following are configured: (TODO: check it!)
+  - _Read and write permissions_ under _Workflow permissions_
+  - _Allow GitHub Actions to create and approve pull requests_ is optional
 
 This _"flat registry with tagged components"_ model scales cleanly across repositories while remaining compliant with GitHub's authentication and namespace rules. It also provides a consistent, human-readable way to publish and manage multiple container images under one project.
 
