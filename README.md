@@ -210,6 +210,11 @@ TODO:
 - Does the first version of the image has to be pushed using PAT?
 - Does it still require App to have Package write permission?
 - `packages: write` (YES)
+- Go to your repo → Settings → Actions → General (YES)
+  - Scroll to Workflow permissions
+    Enable:
+    ✅ “Read and write permissions”
+    ✅ “Allow GitHub Actions to create and approve pull requests”
 
 👆 which of these?
 
