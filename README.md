@@ -205,6 +205,8 @@ When a single repository produces multiple container images (for example, api, u
   - Easy to query, filter, and sort by component prefix e.g. `api-*`
 - Alternative patterns - other semver-valid formats such as `1.2.3+api` or `api_v1.2.3` were evaluated, but `api-1.2.3` offers the best portability, readability, and compatibility with container image tooling and CI pipelines
 
+TODO: Does the first version of the image has to be pushed using PAT?
+
 This _"flat registry with tagged components"_ model scales cleanly across repositories while staying compliant with GitHub's authentication and namespace rules.
 
 ## How to use this repository
