@@ -210,6 +210,8 @@ TODO:
 - Does the first version of the image has to be pushed using PAT?
 - Does it still require App to have Package write permission?
 
+👆 it looks like it needs both
+
 This _"flat registry with tagged components"_ model scales cleanly across repositories while staying compliant with GitHub's authentication and namespace rules.
 
 ## How to use this repository
