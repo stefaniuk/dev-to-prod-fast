@@ -215,13 +215,13 @@ TODO:
 - Does it still require App to have Package write permission?
   - Currnet access: Read access to metadata & Read and write access to code, issues, and packages
   - Droped the package registry and expexcted this to still work (re-creaet automaticly)
-- `packages: write` (CHECKING)
-  - removed package app access -> set to none
+- `packages: write` (is required)
+  - removed package app access -> set to none, it still worked
   - Droped the package registry and expexcted this to still work (re-creaet automaticly)
+- Do not use ${{ secrets.GITHUB_TOKEN }}, favour ${{ github.token }} instead, Built-in, ephemeral token automatically provided to every workflow run
 
 ---
 
-- ${{ github.token }} or ${{ secrets.GITHUB_TOKEN }}
 - Go to your repo → Settings → Actions → General
   - Scroll to Workflow permissions
     Enable:
