@@ -78,7 +78,7 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ github.token }}
 
       - name: "Build and push container image"
         if: steps.release.outputs.new_release_published == 'true'
