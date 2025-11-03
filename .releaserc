@@ -51,7 +51,7 @@
         "assets": [
           "VERSION"
         ],
-        "message": "chore(release): ${nextRelease.version} [skip ci]"
+        "message": "chore(release): ${nextRelease.version} [skip actions]\n\n${nextRelease.notes}"
       }
     ],
     "@semantic-release/github"
