@@ -103,7 +103,7 @@ Follow these steps to create and configure a minimal‑permission GitHub App tha
 1. Create the App
 
    - Go to [GitHub App settings](https://github.com/settings/apps) user _Settings → Developer Settings → GitHub Apps → New GitHub App_
-   - Name it something like _"My Dev to Prod Fast Release App"_ (must be globally unique)
+   - Name it something like _"My Release App"_ (must be globally unique)
    - Set the homepage URL to your repository
    - Configure permissions
      - Repository permissions:
@@ -156,7 +156,7 @@ Steps:
 1. Generate a key locally:
 
    ```bash
-   gpg --quick-generate-key "Dev to Prod Fast Release Bot <your-email@users.noreply.github.com>" ed25519 sign 1m
+   gpg --quick-generate-key "Release Bot <your-email@users.noreply.github.com>" ed25519 sign 1m
 
    ID=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX # your key ID
    ```
